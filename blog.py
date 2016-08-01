@@ -34,6 +34,13 @@ class Handler (webapp2.RequestHandler):
         """
         self.write(self.render_str(template, **kw))
 
+class NewPost(Handler):
+    def get(self):
+        #render form page
+        self.render("newpost.html")
+
+
+
 app = webapp2.WSGIApplication([
                                 ("/blog/newpost", NewPost),
                                 ('/blog/([0-9]+)', PostPage),
