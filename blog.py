@@ -63,13 +63,27 @@ class NewPost(Handler):
         else:
             print ("[!] Error")
             print (subject)
+            print(content)
 
+class PostPage(Handler):
+    def get(self, post_id):
+        key = db.Key.from_path('Post', int(post_id) )
+        post = db.get(key)
 
+        if not post:
+            self.Error(404)
+
+        self.render("permalink.html", post = post)
+
+class BlogFront(Handler):
+    def get(self):
+        posts = db.GqlQuery("select * from Post order by created desc limit 10")
+        self.render('front.html', posts = posts)
 
 app = webapp2.WSGIApplication([
                                 ("/blog/newpost", NewPost),
-                                # ('/blog/([0-9]+)', PostPage),
-                                # ('/blog/?', BlogFront),
+                                ('/blog/([0-9]+)', PostPage),
+                                ('/blog/?', BlogFront),
                             ], debug=True)
 
 
