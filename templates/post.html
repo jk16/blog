@@ -1,9 +1,5 @@
-<div class='post'>
-    <div class='post-heading'>
-        
-        <div class='post-title'>
-            
-        </div>
+<div class='row'>
+    <div class='col-sm-12'>
 
         <div class='post-date'>
             {{p.created.strftime("%b, %d, %Y")}}
@@ -12,6 +8,12 @@
         <div class="post-content">
             {{p._render_text | safe}}
         </div>
+
+        <form method="post">
+            <input type="hidden" name="id" value="{{p.key().id()}}">
+            <input type="hidden" name="operation" value="delete">
+            <button type="submit">X</button>
+        </form>
 
     </div>
 </div>
