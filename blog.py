@@ -47,6 +47,7 @@ class Post(db.Model):
 class NewPost(Handler):
     def get(self):
         #render form page
+        print ("NewPost get")
         self.render("newpost.html")
 
     def post(self):
@@ -59,12 +60,7 @@ class NewPost(Handler):
             p.put()
 
             self.redirect('/blog/%s' % str(p.key().id()))
-        else:
-            print ("[!] Error")
-            print (subject)
-            print(content)
 
-        print (self.request)
 
 class PostPage(Handler):
     def get(self, post_id):
@@ -83,12 +79,39 @@ class BlogFront(Handler):
 
     def post(self):
         operation = self.request.get("operation")
-        delete = operation == "delete"
 
+        delete = operation == "delete"
         if delete:
             post_id = self.request.get("id")
             key = db.Key.from_path('Post', int(post_id) )
             db.delete(key)
+            
+
+
+class UpdatePost(Handler):
+    def get(self, post_id):
+        key = db.Key.from_path('Post', int(post_id))
+        post = db.get(key)
+
+        error = ""
+        self.render("updatepost.html", subject=post.subject,
+                    content=post.content, error=error)
+        
+    def post(self, post_id):
+        operation = self.request.get("operation")
+
+        subject = self.request.get('subject')
+        content = self.request.get('content')
+
+        key = db.Key.from_path('Post', int(post_id))
+        p = db.get(key)
+
+        p.subject = self.request.get('subject')
+        p.content = self.request.get('content')
+        p.put()
+
+        self.redirect('/blog/%s' % str(p.key().id()))
+
 
 
 
@@ -96,6 +119,8 @@ app = webapp2.WSGIApplication([
                                 ("/blog/newpost", NewPost),
                                 ('/blog/([0-9]+)', PostPage),
                                 ('/blog/?', BlogFront),
+                                ('/blog/([0-9]+)/updatepost', UpdatePost),
+                                
                             ], debug=True)
 
 
