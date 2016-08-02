@@ -2,9 +2,9 @@
 see: http://udacity-cs253.appspot.com/blog
 
 ##Todo List
-- [ ] Add Post (/blog/newpost)
-- [ ] View single post (/blog/([0-9]+))
-- [ ] Remove Post
+- [ X ] Add Post (/blog/newpost)
+- [ X ] View single post (/blog/([0-9]+))
+- [ X ] Remove Post
 - [ ] Edit Post
 - [ ] Create account
 - [ ] Login/Logout
