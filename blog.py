@@ -41,7 +41,6 @@ class Post(db.Model):
     last_modified = db.DateTimeProperty(auto_now=True)
 
     def render(self):
-        print ("[!] render in Post")
         self._render_text = self.content.replace('\n', '<br>')
         return render_str("post.html", p = self)
 
@@ -65,6 +64,8 @@ class NewPost(Handler):
             print (subject)
             print(content)
 
+        print (self.request)
+
 class PostPage(Handler):
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id) )
@@ -79,6 +80,17 @@ class BlogFront(Handler):
     def get(self):
         posts = db.GqlQuery("select * from Post order by created desc limit 10")
         self.render('front.html', posts = posts)
+
+    def post(self):
+        operation = self.request.get("operation")
+        delete = operation == "delete"
+
+        if delete:
+            post_id = self.request.get("id")
+            key = db.Key.from_path('Post', int(post_id) )
+            db.delete(key)
+
+
 
 app = webapp2.WSGIApplication([
                                 ("/blog/newpost", NewPost),
