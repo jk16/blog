@@ -15,6 +15,14 @@
     <body>
         <a href="/blog" class="main-title">CS 253 Blog</a>
 
+        <div class="login-content container">
+            {% if user %}
+                {{user.name}}
+            {% else %}
+                <a class="login-link" href="/signup">signup</a>
+            {% endif %}
+        </div>
+
         <div id="content">
             {% block content %}
             {% endblock %}
