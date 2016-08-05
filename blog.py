@@ -65,7 +65,7 @@ class Handler (webapp2.RequestHandler):
         # find the cookie in the request
         cookie_val = self.request.cookies.get(name)
         return cookie_val and check_secure_val(cookie_val)
-        
+
     def login(self, user):
         self.set_secure_cookie('user_id', str(user.key().id()))
 
@@ -165,7 +165,15 @@ class User(db.Model):
     pw_hash = db.StringProperty(required=True)
     email = db.StringProperty()
 
+    @classmethod
+    def by_name(cls, name):
+        u = cls.all().filter('name =', name).get()
+        return u
 
+    @classmethod
+    def register(cls, name, pw, email=None):
+        pw_hash = make_pw_hash(name, pw)
+        return cls(name=name, pw_hash=pw_hash, email=email)
 class Register(Handler):
     def get(self):
         self.render("signup-form.html")
