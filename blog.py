@@ -15,6 +15,7 @@ def check_secure_val(secure_val):
     val = secure_val.split('|')[0]
     if secure_val == make_secure_val(val):
         return val
+
 def make_salt(length=5):
     return ''.join(random.choice(letters) for x in xrange(length))
 
@@ -62,8 +63,8 @@ class Handler (webapp2.RequestHandler):
         """
         Takes a template name and returns a string of that rendered template
         """
-        t = jinja_env.get_template(template)
-        return t.render(params)
+        params['user'] = self.user
+        return render_str(template, **params)
 
     def render(self, template, **kw):
         """
@@ -75,7 +76,7 @@ class Handler (webapp2.RequestHandler):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
-        print ("user cookie: %s" % self.user)
+
 
     def set_secure_cookie(self, name, val):
         cookie_val = make_secure_val(val)
@@ -90,6 +91,9 @@ class Handler (webapp2.RequestHandler):
 
     def login(self, user):
         self.set_secure_cookie('user_id', str(user.key().id()))
+
+    def logout(self):
+        self.response.headers.add_header('Set-Cookie', 'user_id=; Path=/')
 
 class Post(db.Model):
     subject = db.StringProperty(required=True) #particular type
@@ -130,7 +134,7 @@ class PostPage(Handler):
 
 class BlogFront(Handler):
     def get(self):
-        posts = db.GqlQuery("select * from Post order by created desc limit 10")
+        posts = greetings = Post.all().order('-created')
         self.render('front.html', posts = posts)
 
     def post(self):
@@ -207,6 +211,7 @@ class User(db.Model):
     def by_id(cls, uid):
         # get_by_id is a Datastore fxn
         return cls.get_by_id(uid)
+
 class Register(Handler):
     def get(self):
         self.render("signup-form.html")
@@ -267,6 +272,11 @@ class Login(Handler):
             msg = "Invalid Login"
             self.render('login-form.html', error=msg)
 
+class Logout(Handler):
+    def get(self):
+        self.logout()
+        self.redirect("/blog")
+
 app = webapp2.WSGIApplication([
                                 ("/blog/newpost", NewPost),
                                 ('/blog/([0-9]+)', PostPage),
@@ -274,6 +284,7 @@ app = webapp2.WSGIApplication([
                                 ('/blog/([0-9]+)/updatepost', UpdatePost),
                                 ('/signup', Register),
                                 ('/login', Login),
+                                ('/logout', Logout)
                                 
                             ], debug=True)
 
