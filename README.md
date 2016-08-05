@@ -6,5 +6,5 @@ see: http://udacity-cs253.appspot.com/blog
 - [ X ] View single post (/blog/([0-9]+))
 - [ X ] Remove Post
 - [ X ] Edit Post
-- [ ] Create account
-- [ ] Login/Logout w/ session cookie
+- [ X ] Create account
+- [ X ] Login/Logout w/ session cookie
