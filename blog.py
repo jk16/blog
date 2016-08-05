@@ -2,12 +2,32 @@ import os
 import re
 import webapp2
 import jinja2
-
+import random
 from google.appengine.ext import db
-
+from string import letters
+import hashlib
+import hmac
 template_dir = os.path.join(os.path.dirname(__file__), 'templates')
 jinja_env = jinja2.Environment(loader = jinja2.FileSystemLoader(template_dir),
                                 autoescape = True)
+
+def check_secure_val(secure_val):
+    val = secure_val.split('|')[0]
+    if secure_val == make_secure_val(val):
+        return val
+def make_salt(length=5):
+    return ''.join(random.choice(letters) for x in xrange(length))
+
+def make_pw_hash(name, pw, salt=None):
+    if not salt:
+        salt = make_salt()
+
+    h = hashlib.sha256(name + pw + salt).hexdigest()
+    return '%s,%s' % (salt, h)
+
+def valid_pw(name, password, h):
+    salt = h.split(',')[0]
+    return h == make_pw_hash(name, password, salt)
 
 USER_RE = re.compile(r"^[a-zA-Z0-9_-]{3,20}$")
 PASS_RE = re.compile(r"^.{3,20}$")
@@ -26,6 +46,7 @@ def render_str(template, **params):
     t = jinja_env.get_template(template)
     return t.render(params)
 
+secret = "2jd92hgkd9"
 def make_secure_val(val):
     return '%s|%s' % (val, hmac.new(secret, val).hexdigest())
 
@@ -54,10 +75,11 @@ class Handler (webapp2.RequestHandler):
         webapp2.RequestHandler.initialize(self, *a, **kw)
         uid = self.read_secure_cookie('user_id')
         self.user = uid and User.by_id(int(uid))
+        print ("user cookie: %s" % self.user)
 
     def set_secure_cookie(self, name, val):
         cookie_val = make_secure_val(val)
-        self.response.add_header(
+        self.response.headers.add_header(
             'Set-Cookie',
             '%s=%s; Path=/'%(name, cookie_val))
 
@@ -174,6 +196,17 @@ class User(db.Model):
     def register(cls, name, pw, email=None):
         pw_hash = make_pw_hash(name, pw)
         return cls(name=name, pw_hash=pw_hash, email=email)
+
+    @classmethod
+    def login(cls, name, pw):
+        u = cls.by_name(name)
+        if u and valid_pw(name, pw, u.pw_hash):
+            return u
+
+    @classmethod
+    def by_id(cls, uid):
+        # get_by_id is a Datastore fxn
+        return cls.get_by_id(uid)
 class Register(Handler):
     def get(self):
         self.render("signup-form.html")
@@ -185,7 +218,7 @@ class Register(Handler):
         email = self.request.get("email")
 
         have_error = False
-        params = dict(username=self.username, email=self.email)
+        params = dict(username=username, email=email)
 
         if not valid_username(username):
             params['error_username'] = "That's not a valid username."
@@ -211,22 +244,36 @@ class Register(Handler):
                 msg = 'That user already exists.'
                 self.render('signup-form.html', error_username=msg)
             else:
-                u = User.register(self.username, self.password, self.email)
+                u = User.register(username, password_, email)
                 u.put()
 
                 self.login(u)
                 self.redirect("/blog")
 
+class Login(Handler):
+    def get(self):
+        self.render("login-form.html")
 
+    def post(self):
+        username = self.request.get("username")
+        password_ = self.request.get("password")
 
+        user_exists = User.login(username, password_)
 
+        if user_exists:
+            self.login(user_exists)
+            self.redirect("/blog")
+        else:
+            msg = "Invalid Login"
+            self.render('login-form.html', error=msg)
 
 app = webapp2.WSGIApplication([
                                 ("/blog/newpost", NewPost),
                                 ('/blog/([0-9]+)', PostPage),
                                 ('/blog/?', BlogFront),
                                 ('/blog/([0-9]+)/updatepost', UpdatePost),
-                                ('/signup', Register)
+                                ('/signup', Register),
+                                ('/login', Login),
                                 
                             ], debug=True)
 
