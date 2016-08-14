@@ -101,9 +101,9 @@ class Post(db.Model):
     created = db.DateTimeProperty(auto_now_add=True)
     last_modified = db.DateTimeProperty(auto_now=True)
 
-    def render(self):
-        self._render_text = self.content.replace('\n', '<br>')
-        return render_str("post.html", p = self)
+    def render_front_view(self):
+        return render_str("titles.html", p = self)
+
 
 class NewPost(Handler):
     def get(self):
@@ -126,11 +126,15 @@ class PostPage(Handler):
     def get(self, post_id):
         key = db.Key.from_path('Post', int(post_id) )
         post = db.get(key)
-
+        print ("post = %s" % post.content)
         if not post:
             self.Error(404)
 
-        self.render("permalink.html", post = post)
+        post._render_text = post.content.replace('\n', '<br>')
+        self.render("post.html", p = post)
+
+    def post(self, post_id):
+        print ('posttttt')
 
 class BlogFront(Handler):
     def get(self):
@@ -141,11 +145,14 @@ class BlogFront(Handler):
         operation = self.request.get("operation")
 
         delete = operation == "delete"
-        if delete:
+        like = operation = "like"
+        if delete or like:
             post_id = self.request.get("id")
             key = db.Key.from_path('Post', int(post_id) )
-            db.delete(key)
-            
+            if delete:
+                db.delete(key)
+            # if like:
+
 
 
 class UpdatePost(Handler):
@@ -158,8 +165,6 @@ class UpdatePost(Handler):
                     content=post.content, error=error)
         
     def post(self, post_id):
-        operation = self.request.get("operation")
-
         subject = self.request.get('subject')
         content = self.request.get('content')
 
@@ -276,6 +281,7 @@ class Logout(Handler):
     def get(self):
         self.logout()
         self.redirect("/blog")
+
 
 app = webapp2.WSGIApplication([
                                 ("/blog/newpost", NewPost),
