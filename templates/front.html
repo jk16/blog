@@ -3,8 +3,8 @@
 {% block content %}
 
     {% for p in posts %}
-
-        {{p.render() | safe}}
+        <!-- Method in class Post -->
+        {{p.render_front_view() | safe}}
         <br><br>
     {% endfor %}
 
